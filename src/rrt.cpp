@@ -2,10 +2,11 @@
 #include <string>
 #include <vector>
 #include <math.h>
+#include <unordered_map>
 #include <geometry_msgs/Point.h>
 #include <ros/ros.h>
 #include <visualization_msgs/Marker.h>
-
+#include <chrono>
 
 using namespace std;
 
@@ -13,34 +14,20 @@ class RRT{
 private:	
 	int x_max = 100; // Max N of rows; Could be initiated at the begining 
 	int y_max = 100; // Max N of cols;
-	vector<vector<int>> occu_grid(x_max,vector<int>(y_max)); //init the grid with x_max and y_max
+	vector<vector<int>> occu_grid {x_max, vector<int>(y_max,0)}; //init the grid with x_max and y_max
 	vector<geometry_msgs::Point> nodes; // List of all points from rrt
-	unordered_map<geometry_msgs::Point,vector<geometry_msgs::Point>> adj_tree; // Build the adjancent tree
+	// unordered_map<geometry_msgs::Point,vector<geometry_msgs::Point>> adj_tree; // Build the adjancent tree
 
 	const int MAX_DIST = 5; // The max distance between two nodes connected to each other
 
-
-
-	ros::init(argc, argv, "rrt_points_lines");
+	// ros::init(argc, argv, "rrt_points_lines");
 	ros::NodeHandle n_ros;
-	ros::Publisher pub_marker = n.advertise<visualization_msgs::Marker>("viz_marker",10);
+	ros::Publisher pub_marker = n_ros.advertise<visualization_msgs::Marker>("viz_marker",10);
 
     visualization_msgs::Marker points, line_strip, line_list;
-    points.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/my_frame";
-    points.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
-    points.ns = line_strip.ns = line_list.ns = "points_and_lines";
-    points.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
-    points.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
-
-    points.type = visualization_msgs::Marker::POINTS;
-
-    points.scale.x = 0.2;
-    points.scale.y = 0.2;
-    points.color.g = 1.0f;
-    points.color.a = 1.0;
 
 	// Calculates the distance between two nodes
-	int dist(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
+	float dist(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
 		// returning int might result in bug!!!
 		return sqrt(pow((p2.x-p1.x),2)+pow((p2.y-p1.y),2));
 	}
@@ -96,16 +83,16 @@ private:
 	}
 
 	// Check if the random node is in free space
-	bool _InFreeSpace(geometry_msgs::Point &p){
+	bool _InFreeSpace(geometry_msgs::Point& p){
 		if (occu_grid[p.x][p.y]==0) return true;
 		else return false;
 	}
 
 	// Generate a random point
-	geometry_msgs::Point random_point(const int x_max, const int y_max){
+	geometry_msgs::Point random_point(){
 		geometry_msgs::Point temp_p;
-		temp_p.x = rand() % x_max + 1;
-		temp_p.y = rand() % y_max + 1;
+		temp_p.x = rand() % x_max ;
+		temp_p.y = rand() % y_max ;
 		temp_p.z = 0;
 		return temp_p;
 	}
@@ -114,6 +101,9 @@ private:
 	geometry_msgs::Point findNearest(geometry_msgs::Point &p){
 		geometry_msgs::Point n = nodes[0];
 		for (auto node:nodes){
+			// cout<<"node"<<node.x<<" "<<node.y<<endl;
+			// cout<<"n[0]"<<n.x<<" "<<n.y<<endl;
+			// cout<<"p"<<p.x<<" "<<p.y<<endl;
 			if (dist(p,node)<dist(p,n)){
 				n = node;
 			}
@@ -124,8 +114,27 @@ private:
 
 
 public:
-	RRT_star(){
+	RRT(){
 		cout<<"The RRT_star object in being called"<<endl;		
+	    points.header.frame_id = line_strip.header.frame_id = line_list.header.frame_id = "/my_frame";
+	    points.header.stamp = line_strip.header.stamp = line_list.header.stamp = ros::Time::now();
+	    points.ns = line_strip.ns = line_list.ns = "points_and_lines";
+	    points.action = line_strip.action = line_list.action = visualization_msgs::Marker::ADD;
+	    points.pose.orientation.w = line_strip.pose.orientation.w = line_list.pose.orientation.w = 1.0;
+
+	    points.type = visualization_msgs::Marker::POINTS;
+
+	    points.scale.x = 0.2;
+	    points.scale.y = 0.2;
+	    points.color.g = 1.0f;
+	    points.color.a = 1.0;
+        line_list.scale.x = 0.1;
+	    // Line list is red
+	    line_list.id = 2;
+    	line_list.type = visualization_msgs::Marker::LINE_LIST;
+	    line_list.color.r = 1.0;
+	    line_list.color.a = 1.0;
+		cout<<"The RRT_star object in being called agian"<<endl;		
 	}
 
 	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end){
@@ -133,32 +142,61 @@ public:
 		// init ??
 		nodes.push_back(p_start);
 	    const int N = 1000;
+	    auto start = std::chrono::high_resolution_clock::now();
+
 	    for (int i=0; i<N; i++){
+	    	// cout<< "here"<<endl;
 	    	geometry_msgs::Point rd = random_point();
 	    	while (!_InFreeSpace(rd)) rd = random_point();
 	    	geometry_msgs::Point n = findNearest(rd);
-	    	rd = steer(n,rd);
+	    	// cout << n.x<<n.y<<endl;
+	    	// rd = steer(n,rd);
 	    	if (collision_free(n,rd)){
-	    		adj_tree[n].push_back(rd);
+	    		// adj_tree[n].push_back(rd);
 	    		points.points.push_back(rd);
+	    		line_list.points.push_back(n);
+	    		line_list.points.push_back(rd);
+	    		nodes.push_back(rd);
 
 	    		// DO SOMETHING!!!!!
 	    	}
-	    	marker_pub.publish(points);
-	    	ros::spinOnce();
+	    	pub_marker.publish(points);
+	    	pub_marker.publish(line_list);
+	    	// cout<< "publised"<<endl;
+
 	    }
+
+	    auto finish = std::chrono::high_resolution_clock::now();
+	    std::chrono::duration<double> elapsed = finish - start;
+		std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 	}
 
-}
+	void publish_it(){
+    	pub_marker.publish(points);
+    	pub_marker.publish(line_list);
+	}
+};
 
-int main(int argc, char const *argv[])
-{
-	RRT = RRT();
+int main(int argc, char * argv[]) {
+	ros::init(argc, argv, "rrt_points_lines");	
+	RRT rrt;
+  	ros::Rate r(5);
+    cout << "Press Enter to Continue";
+	cin.ignore();
 	geometry_msgs::Point P1,P2;
 	P1.x = 0;
 	P1.y = 0;
 	P2.x = 10;
 	P2.y = 10;
-	RRT.plan_it()
+	cout<<"just before plan"<<endl;	
+	rrt.plan_it(P1,P2);
+		while (ros::ok()){	
+			rrt.publish_it();
+			r.sleep();}
+ //    cout << "Press Enter to Continue";
+	// cin.ignore();
+	// r.sleep();
+// }
+
 	return 0;
 }
