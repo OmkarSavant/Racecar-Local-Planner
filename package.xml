@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>a_stars_pure_pursuit</name>
+  <name>a_stars_local_planner</name>
   <version>0.0.0</version>
   <description>The a_stars_pure_pursuit package</description>
 
