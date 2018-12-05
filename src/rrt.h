@@ -10,8 +10,6 @@ using namespace std;
 
 class RRT {
 private:
-	int x_max;  
-	int y_max; 
 	vector<vector<int>> occu_grid;
 	vector<geometry_msgs::Point> nodes;
 
