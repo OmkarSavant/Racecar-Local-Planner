@@ -10,6 +10,7 @@
 using namespace std;
 
 class RRT {
+
 private:
 	vector<vector<int>> occu_grid;
 	vector<geometry_msgs::Point> nodes;
@@ -32,9 +33,11 @@ private:
 
 	geometry_msgs::Point findNearest(geometry_msgs::Point &p);
 
+	int findNearestStruct(geometry_msgs::Point &p);
+
 public:
 	
-	vector<treeNode*> structVect; //vector of nodes structs that are added to the tree
+	vector<treeNode> structVect; //vector of nodes structs that are added to the tree
 	RRT(vector<vector<int>> occugrid);
 	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj);
 	void publish_it();

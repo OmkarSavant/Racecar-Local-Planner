@@ -81,14 +81,30 @@ geometry_msgs::Point RRT::findNearest(geometry_msgs::Point &p){
 	geometry_msgs::Point n = nodes[0];
 
 	for (auto node : nodes){
-		// cout<<"node"<<node.x<<" "<<node.y<<endl;
-		// cout<<"n[0]"<<n.x<<" "<<n.y<<endl;
-		// cout<<"p"<<p.x<<" "<<p.y<<endl;
-		if (dist(p,node)<dist(p,n)){
+		if (dist(p,node)<dist(p,n)) {
 			n = node;
 		}
 	}
+
 	return n;
+}
+
+// Find the struct containing the nearest point from the random point
+int RRT::findNearestStruct(geometry_msgs::Point &p){
+	
+	//start with the root node of the tree	
+	geometry_msgs::Point n = structVect[0].node;
+	int nearest_idx = 0;
+	
+	for (int i=0; i<structVect.size();i++){
+		//cout<<"this is vect loop"<<structVect[i].node.x<<endl;
+		if (dist(p,structVect[i].node) < dist(p,n)) {
+			n = structVect[i].node;	
+			nearest_idx = i;
+		}
+	}
+
+	return nearest_idx;
 }
 
 RRT::RRT(vector<vector<int>> occugrid) : MAX_DIST(5), occu_grid(occugrid) {
@@ -121,13 +137,14 @@ RRT::RRT(vector<vector<int>> occugrid) : MAX_DIST(5), occu_grid(occugrid) {
 
 void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj){
 
-	nodes.push_back(p_start);
+	//nodes.push_back(p_start);
 	
-	//create a struct to define the starting node (car's position) 
-	//struct starting;
-	//starting.node = p_start;
-	//starting.parent = nullptr;
-	//structVect.push_back(starting);		
+	//Create starting nodeStruct and add
+	struct treeNode starting;
+	starting.node = p_start;
+	starting.parent_idx = -1;
+
+	structVect.push_back(starting);
 	
 	const int N = 1000; //max number of iterations in the search 
 	
@@ -137,7 +154,6 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 		
 		//once the path has been found, the shortest path must be generated and 		
 		if(pathFound) { 
-			
 			break; 
 		}
 
@@ -145,17 +161,31 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 
 		if(_InFreeSpace(rd)) {
 
-			geometry_msgs::Point n = findNearest(rd);
+			//geometry_msgs::Point n = findNearest(rd);
+
+			//cout<<"nearest node: "<< n.x <<" "<< n.y <<endl;
+	
+			int nearestStruct_idx = findNearestStruct(rd);
+
+			//cout<<"nearest struct: "<< structVect[nearestStruct_idx].node.x <<" "<< structVect[nearestStruct_idx].node.y <<endl;
+			
 			// rd = steer(n,rd);
-			if (collision_free(n,rd)) {
+			
+			if(collision_free(structVect[nearestStruct_idx].node,rd)) {
+			//if (collision_free(n,rd)) {
 
 				points.points.push_back(rd);
-				line_list.points.push_back(n);
+				//line_list.points.push_back(n);
+				line_list.points.push_back(structVect[nearestStruct_idx].node);
 				line_list.points.push_back(rd);
-				nodes.push_back(rd);
+				//nodes.push_back(rd);
 				
-				//struct newStruct; 
-				//sstruct newStruct.node = rd;
+				//This point should now be added to the structVector
+				treeNode newStruct; 
+				newStruct.node = rd;
+				newStruct.parent_idx = nearestStruct_idx;
+
+				structVect.push_back(newStruct);
 		
 				//Check if the new point is within an acceptable delta of the endpoint
 				if (dist(rd,p_end) < 5) {
@@ -166,7 +196,17 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 						points.points.push_back(p_end);
 						line_list.points.push_back(rd);
 						line_list.points.push_back(p_end);
-						nodes.push_back(p_end);	
+						//nodes.push_back(p_end);	
+				//		cout << "nodes PB end: " << p_end.x << " " << p_end.y << endl;
+
+						//Create a new struct representing the endNode
+						struct treeNode endStruct;
+						endStruct.node = p_end;
+						endStruct.parent_idx = nearestStruct_idx; //the parent is the struct containing the random node
+						
+						structVect.push_back(endStruct);
+				//		cout << "struct PB end: " << endStruct.node.x << " " << endStruct.node.y << endl;
+
 						pathFound = true;
 						cout << "Path found. Length = " << i << endl;
 					}					
@@ -175,16 +215,30 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 			pub_marker.publish(points);
 			pub_marker.publish(line_list);
 			// cout<< "publised"<<endl;
+
+		} // end if(freespace)
+	} // end for loop
+	
+	if(pathFound) {
+		treeNode currNode = structVect[structVect.size() - 1]; //endNode
+		
+		while(currNode.parent_idx != -1) {
+			vector<int> newCoords;
+			newCoords.push_back(currNode.node.x);
+			newCoords.push_back(currNode.node.y);
+			traj.push_back(newCoords);
+
+		//	cout<< "traj X: " << newCoords[0] << " " << newCoords[1] << endl;
+			currNode = structVect[currNode.parent_idx];
 		}
 	}
-	
 
-	}
+}// end plan_it
 
 void RRT::publish_it() {
     	pub_marker.publish(points);
     	pub_marker.publish(line_list);
-	}
+}
 
 
 int main(int argc, char * argv[]) {
@@ -237,8 +291,6 @@ int main(int argc, char * argv[]) {
 	degree += 0.25;
 	}
 
-	
-
 	ros::init(argc, argv, "rrt_points_lines");	
 	RRT rrt(occugrid);
   	ros::Rate r(5);
@@ -257,14 +309,6 @@ int main(int argc, char * argv[]) {
 	//Create a vector of int arrays that represent the x,y coordinates of the local path 
 	vector<vector<int>> trajectory; 
 
-	//Testing whether the structs work as intended 
-	
-	treeNode starting;
-	starting.node = &P1;
-	starting.parent = nullptr;
-	
-	rrt.structVect.push_back(&starting);
-
 	rrt.plan_it(P1,P2,trajectory);
 
 	auto finish = std::chrono::high_resolution_clock::now();
@@ -276,11 +320,12 @@ int main(int argc, char * argv[]) {
 	//	cout << point[0] << "," << point[1] << endl;
 	//}
 
-	cout << rrt.structVect[0]->node->x << " " << rrt.structVect[0]->node->y << endl;
+	//cout << rrt.structVect[0]->node->x << " " << rrt.structVect[0]->node->y << endl;
 
 	while (ros::ok()){	
 		rrt.publish_it();
 		r.sleep();}
+
  //    cout << "Press Enter to Continue";
 	// cin.ignore();
 	// r.sleep();
