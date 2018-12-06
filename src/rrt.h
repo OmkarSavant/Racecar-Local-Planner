@@ -13,7 +13,6 @@ class RRT {
 
 private:
 	vector<vector<int>> occu_grid;
-	vector<geometry_msgs::Point> nodes;
 
 	const int MAX_DIST; // The max distance between two nodes connected to each other
 
@@ -30,8 +29,6 @@ private:
 	bool collision_free(geometry_msgs::Point& p1, geometry_msgs::Point& p2);
 
 	geometry_msgs::Point random_point();
-
-	geometry_msgs::Point findNearest(geometry_msgs::Point &p);
 
 	int findNearestStruct(geometry_msgs::Point &p);
 
