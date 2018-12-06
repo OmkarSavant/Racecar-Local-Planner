@@ -1,5 +1,6 @@
 #pragma once
 
+#include "treeNode.h"
 #include <unordered_map>
 #include <geometry_msgs/Point.h>
 #include <ros/ros.h>
@@ -32,7 +33,9 @@ private:
 	geometry_msgs::Point findNearest(geometry_msgs::Point &p);
 
 public:
+	
+	vector<treeNode*> structVect; //vector of nodes structs that are added to the tree
 	RRT(vector<vector<int>> occugrid);
-	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end);
+	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj);
 	void publish_it();
 };
