@@ -238,13 +238,16 @@ int main(int argc, char * argv[]) {
 	ros::init(argc, argv, "rrt_points_lines");	
 	RRT rrt(occugrid);
   	ros::Rate r(5);
+
     	//cout << "Press Enter to Continue";
 	//cin.ignore();
+
 	geometry_msgs::Point P1,P2;
 	P1.x = 99;
 	P1.y = 99;
 	P2.x = 79;
 	P2.y = 10;
+
 	cout<<"just before plan"<<endl;	
 
 	rrt.plan_it(P1,P2);
