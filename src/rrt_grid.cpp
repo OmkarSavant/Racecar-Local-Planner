@@ -228,9 +228,14 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 			newCoords.push_back(currNode.node.y);
 			traj.push_back(newCoords);
 
-		//	cout<< "traj X: " << newCoords[0] << " " << newCoords[1] << endl;
 			currNode = structVect[currNode.parent_idx];
 		}
+
+		currNode = structVect[0]; // startNode
+		vector<int> newCoords;
+		newCoords.push_back(currNode.node.x);
+		newCoords.push_back(currNode.node.y);
+		traj.push_back(newCoords);
 	}
 
 }// end plan_it
@@ -316,9 +321,9 @@ int main(int argc, char * argv[]) {
 	std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 
 	//Print out the values from trajectory
-	//for(vector<int> point : trajectory) {
-	//	cout << point[0] << "," << point[1] << endl;
-	//}
+	for(vector<int> point : trajectory) {
+		cout << "Traj: " << point[0] << "," << point[1] << endl;
+	}
 
 	//cout << rrt.structVect[0]->node->x << " " << rrt.structVect[0]->node->y << endl;
 
