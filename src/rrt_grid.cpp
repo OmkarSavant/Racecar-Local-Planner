@@ -319,8 +319,24 @@ int main(int argc, char * argv[]) {
 	degree += 0.25;
 	}
 
+
+	vector<vector<int>> inflated_grid {100, vector<int>(200,0)};
+
+	//Inflate the grid by making all of the 1s' neighbors 1s as well
+	for(int i = 1; i < 99; i++) {
+	for(int j = 1; j < 199; j++) {
+	    if (occugrid[i][j] == 1) {
+		for(int k = -1; k <= 1; k++){
+		    for(int l = -1; l <= 1; l++) {
+		        inflated_grid[i+k][j+l] = 1;
+		    }
+		}
+	    }
+	}
+	}
+	
 	ros::init(argc, argv, "rrt_points_lines");	
-	RRT rrt(occugrid);
+	RRT rrt(inflated_grid);
   	ros::Rate r(5);
 
     	//cout << "Press Enter to Continue";
