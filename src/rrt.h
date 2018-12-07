@@ -18,7 +18,7 @@ private:
 
 	ros::NodeHandle n_ros;
 	ros::Publisher pub_marker;
-	visualization_msgs::Marker points, line_strip, line_list;
+	visualization_msgs::Marker points, line_list, line_list_final;
 
 	float dist(geometry_msgs::Point& p1, geometry_msgs::Point& p2); 
 
@@ -38,4 +38,5 @@ public:
 	RRT(vector<vector<int>> occugrid);
 	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj);
 	void publish_it();
+	void markObstacle();
 };
