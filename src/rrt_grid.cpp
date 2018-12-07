@@ -150,7 +150,8 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 
 			//cout<<"nearest struct: "<< structVect[nearestStruct_idx].node.x <<" "<< structVect[nearestStruct_idx].node.y <<endl;
 			
-			// rd = steer(n,rd);
+			//limit the size of the node connection
+			rd = steer(structVect[nearestStruct_idx].node,rd);
 			
 			if(collision_free(structVect[nearestStruct_idx].node,rd)) {
 
@@ -185,13 +186,12 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 				//		cout << "struct PB end: " << endStruct.node.x << " " << endStruct.node.y << endl;
 
 						pathFound = true;
-						cout << "Path found. Length = " << i << endl;
+						cout << "Path found." << endl;
 					}					
 				}
 			}
 			pub_marker.publish(points);
 			pub_marker.publish(line_list);
-			// cout<< "publised"<<endl;
 
 		} // end if(freespace)
 	} // end for loop
@@ -297,6 +297,7 @@ int main(int argc, char * argv[]) {
 	//Print out the values from trajectory
 	for(vector<int> point : trajectory) {
 		cout << "Traj: " << point[0] << "," << point[1] << endl;
+		cout << "Length: " << trajectory.size() << endl;
 	}
 
 	//cout << rrt.structVect[0]->node->x << " " << rrt.structVect[0]->node->y << endl;
