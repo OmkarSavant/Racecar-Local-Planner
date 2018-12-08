@@ -6,6 +6,10 @@
 #include <ros/ros.h>
 #include <geometry_msgs/Point.h>
 #include <visualization_msgs/Marker.h>
+#include <cstdlib>
+#include <ctime>
+#include <chrono>
+
 
 using namespace std;
 
@@ -32,6 +36,7 @@ private:
 
 	int findNearestStruct(geometry_msgs::Point &p);
 
+
 public:
 	
 	vector<treeNode> structVect; //vector of nodes structs that are added to the tree
@@ -39,4 +44,5 @@ public:
 	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj);
 	void publish_it();
 	void markObstacle();
+	void vec_delete();
 };
