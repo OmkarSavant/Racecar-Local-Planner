@@ -327,6 +327,7 @@ void RRT::vec_delete(){
 	line_list_final.points.clear();
 	line_list.points.clear();
 	structVect.clear();
+	points.points.clear();
 }
 
 void RRT::buildOccuGrid(float lidarScan[1081]) {
@@ -386,7 +387,7 @@ void RRT::buildOccuGrid(float lidarScan[1081]) {
 
 int main(int argc, char * argv[]) {
 
-	ros::init(argc, argv, "rrt_points_lines");
+	//seed the random number generator
 	srand(time(0));
 
 	   //Configuration 1
@@ -398,8 +399,6 @@ int main(int argc, char * argv[]) {
 	ros::init(argc, argv, "rrt_points_lines");	
 	
 	RRT rrt;
-
-	rrt.buildOccuGrid(lidarData);
 
   	ros::Rate r(10);
 
@@ -432,10 +431,13 @@ int main(int argc, char * argv[]) {
 
 	//cout << rrt.structVect[0]->node->x << " " << rrt.structVect[0]->node->y << endl;
 	
-	rrt.markObstacle();
 
 	while (ros::ok()){	
 		auto start = std::chrono::high_resolution_clock::now();
+		
+		//build the occupancy grid based on the latest lidar data
+		rrt.buildOccuGrid(lidarData);
+		rrt.markObstacle();
 
 		//Create a vector of int arrays that represent the x,y coordinates of the local path 
 		vector<vector<int>> trajectory; 
@@ -447,9 +449,7 @@ int main(int argc, char * argv[]) {
 		std::cout << "Elapsed time: " << elapsed.count() << " s\n";
 		rrt.visualize();
 		rrt.publish_it();
-		r.sleep(); //
-		// cout << "Press Enter to Continue";
-		// cin.ignore();
+		//r.sleep(); 
 		rrt.vec_delete();
 
 	}
