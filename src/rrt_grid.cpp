@@ -5,7 +5,6 @@
 #include <std_msgs/ColorRGBA.h>
 #include <chrono>
 #include "rrt.h"
-// #include <iostream>
 #include <cstdlib>
 #include <ctime>
 
@@ -30,15 +29,13 @@ geometry_msgs::Point RRT::steer(geometry_msgs::Point& p1, geometry_msgs::Point& 
 // Find if the path between two points is collision free
 bool RRT::collision_free(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
 	// check if the path between p1 and p2 is collision free or not
-	float slope = 0.0;
-	float c = 0.0;
 
 	if ((p2.y-p1.y)==0 && (p2.x-p1.x)==0) return false;
 
 	else if ((p2.y-p1.y)==0){
 		int x_small = min(p1.x,p2.x);
 		int x_large = max(p1.x,p2.x);
-		for (int i=x_small; i<=x_large; i++){
+		for (int i=x_small; i<x_large; i++){
 			if (occu_grid[p1.y][i]==1) return false;
 		}
 		return true;
@@ -47,19 +44,20 @@ bool RRT::collision_free(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
 	else if ((p2.x-p1.x)==0){
 		int y_small = min(p2.y,p1.y);
 		int y_large = max(p2.y,p1.y);
-		for (int i=y_small; i<=y_large; i++){
+		for (int i=y_small; i<y_large; i++){
 			if (occu_grid[i][p1.x]==1) return false;
 		}
 		return true;
 	}
 	else {
-		slope = (p2.y - p1.y)/(p2.x - p1.x);
-		// cout<<slope<<endl;
-		c = p1.y - p1.x * slope;
-		for (float i=p1.x; i<=p2.x;i+=0.1){
+		float slope = (p2.y - p1.y)/(p2.x - p1.x);
+		float c = p1.y - p1.x * slope;
+		float x_small = min(p1.x,p2.x);
+		float x_large = max(p1.x,p2.x);
+		float step = (x_large-x_small)/50.0;
+		for (float i=x_small; i<x_large;i+=step){
 			int y_cal = slope*i+c;
-			int x_cal = static_cast<int>(i);
-			// cout << y_cal << x_cal <<endl;
+			int x_cal = i;
 			if (occu_grid[y_cal][x_cal]==1) return false;
 		}
 		return true;			
@@ -136,6 +134,26 @@ RRT::RRT(vector<vector<int>> occugrid) : MAX_DIST(5), occu_grid(occugrid) {
 
 void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj){
 	
+	//Check whether the final point is within free space first, if not. Move it laterally
+	if(occu_grid[p_end.y][p_end.x] == 1) { 
+		cout << "OCCUPIED! " << endl; 
+		
+		//search left and right, and return the point in freespace which is closest
+		for(int i = 0; i < 200 ; i++) {
+			if((p_end.x - i) > 0 && occu_grid[p_end.y][p_end.x - i] == 0) {
+				p_end.x = p_end.x - i; 
+				break;
+			}
+			if((p_end.x + i) < 200 && occu_grid[p_end.y][p_end.x + i] == 0) {
+				p_end.x = p_end.x + i; 
+				break;
+			}
+		}
+		
+		cout << "New X: " << p_end.x << endl;
+	}
+
+	
 	//Create starting nodeStruct and add
 	struct treeNode starting;
 	starting.node = p_start;
@@ -146,7 +164,6 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 	const int N = 10000; //max number of iterations in the search 
 	
 	bool pathFound = 0;
-	markObstacle();
 	for (int i=0; i<N; i++){
 		
 		//once the path has been found, the shortest path must be generated and 		
@@ -206,8 +223,8 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 					}					
 				}
 			}
-			pub_marker.publish(points);
-			pub_marker.publish(line_list);
+			// pub_marker.publish(points);
+			// pub_marker.publish(line_list);
 
 		} // end if(freespace)
 	} // end for loop
@@ -247,9 +264,9 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 		newCoords.push_back(currNode.node.x);
 		newCoords.push_back(currNode.node.y);
 		traj.push_back(newCoords);
-		pub_marker.publish(points);
+		// pub_marker.publish(points);
 
-		pub_marker.publish(line_list_final);
+		// pub_marker.publish(line_list_final);
 		cout<<"just published the final line"<<endl;
 	}
 
@@ -270,9 +287,15 @@ void RRT::markObstacle(){
 	}
 }
 
+void RRT::visualize(){
+	// for (auto curr:newCoords){
+	// 	line_list_final.points.push_back(currNode.node);
+	// }
+	return;
+}
 void RRT::publish_it() {
     	pub_marker.publish(points);
-    	pub_marker.publish(line_list);
+    	// pub_marker.publish(line_list);
 		pub_marker.publish(line_list_final);
 
 }
@@ -357,7 +380,7 @@ int main(int argc, char * argv[]) {
 	P1.x = 99;
 	P1.y = 99;
 	P2.x = 130;
-	P2.y = 15;
+	P2.y = 30;
 
 	// cout<<"just before plan"<<endl;	
 	// auto start = std::chrono::high_resolution_clock::now();
@@ -378,6 +401,7 @@ int main(int argc, char * argv[]) {
 	// }
 
 	//cout << rrt.structVect[0]->node->x << " " << rrt.structVect[0]->node->y << endl;
+	rrt.markObstacle();
 
 	while (ros::ok()){	
 		auto start = std::chrono::high_resolution_clock::now();
@@ -390,7 +414,7 @@ int main(int argc, char * argv[]) {
 		auto finish = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed = finish - start;
 		std::cout << "Elapsed time: " << elapsed.count() << " s\n";
-
+		rrt.visualize();
 		rrt.publish_it();
 		r.sleep(); //
 		// cout << "Press Enter to Continue";
