@@ -36,11 +36,13 @@ private:
 
 	int findNearestStruct(geometry_msgs::Point &p);
 
-
 public:
 	
 	vector<treeNode> structVect; //vector of nodes structs that are added to the tree
-	RRT(vector<vector<int>> occugrid);
+	
+	RRT();
+
+	void buildOccuGrid(float lidarScan[1081]);
 	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj);
 	void publish_it();
 	void markObstacle();
