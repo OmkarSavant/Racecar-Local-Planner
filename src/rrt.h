@@ -47,5 +47,4 @@ public:
 	void publish_it();
 	void markObstacle();
 	void vec_delete();
-	void visualize();
 };
