@@ -158,12 +158,13 @@ RRT::RRT() : MAX_DIST(5) {
 	line_list_final.color.b = 1.0;
 	line_list_final.color.a = 1.0;	
 
-	cout<<"The RRT object's been created"<<endl;		
+	//cout<<"The RRT object's been created"<<endl;		
 
 }
 
 void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vector<int>> &traj){
 
+	//cout << "end goal: " << p2.x << "," << p2.y << "," << yaw << endl;
 
 	//Create starting nodeStruct and add
 	struct treeNode starting;
@@ -398,7 +399,7 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 
 void goalCallback(const geometry_msgs::Point::ConstPtr& data)
 {
-   cout << "Goal point Callback invoked " << endl;
+   //cout << "Goal point Callback invoked " << endl;
 
    //Convert the goal point from the car frame to the occupancy grid frame
    //In the car frame, the y axis is positive to the left, and the x axis is positive up
@@ -406,9 +407,21 @@ void goalCallback(const geometry_msgs::Point::ConstPtr& data)
    // (2,3) becomes 20,30 and then axes flip. If we set our max distance to be 5, these points would be (40,60) before axes flipping
    // (2,3) becomes (39,59) on the grid if the max distance is 5 
 
-   goal_point.x = 99 - (data->y * scalingFactor);
-   goal_point.y = 99 - (data->x * scalingFactor);
-   yaw = data->z;
+   float potentialX = 99 - (data->y * scalingFactor);
+   float potentialY = 99 - (data->x * scalingFactor);
+
+  // cout << "Published goal: " << data->x << "," << data->y << "," << data->z << endl;
+   //check to make sure the new point would not cause a seg fault
+   if(potentialX >= 0 && potentialX <= 199 && potentialY >= 0 && potentialY <= 99) {
+	goal_point.x = potentialX;
+   	goal_point.y = potentialY;
+   	yaw = data->z;
+	// cout << "Occugrid equivalent: " << goal_point.x << "," << goal_point.y << "," << yaw << endl;
+    }
+
+ //   else { cout << "something's wrong with this point" << endl; }
+
+  
 }
 
 int main(int argc, char * argv[]) {
@@ -445,14 +458,14 @@ int main(int argc, char * argv[]) {
 		//Create a vector of int arrays that represent the x,y coordinates of the local path 
 		vector<vector<int>> trajectory; 
 		
-		P2.x = goal_point.x;
-		P2.y = goal_point.y;
+		P2.x = (int) goal_point.x;
+		P2.y = (int) goal_point.y;
 
 		rrt.plan_it(P1,P2,trajectory);
 
 		auto finish = std::chrono::high_resolution_clock::now();
 		std::chrono::duration<double> elapsed = finish - start;
-		ROS_INFO("Elapsed time: %f", elapsed.count());
+		//ROS_INFO("Elapsed time: %f", elapsed.count());
 
 		if (!trajectory.empty()){
 	 	   //Convert the goal point from the occupancy grid frame to the car frame
