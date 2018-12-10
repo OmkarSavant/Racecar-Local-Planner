@@ -473,9 +473,8 @@ int main(int argc, char * argv[]) {
 		   // (2,3) in car frame is (69,79) in occupancy grid frame at a scaling factor of 1, where 10 m is represented by 100 tiles
 		   // (2,3) becomes 20,30 and then axes flip. If we set our max distance to be 5, these points would be (40,60) before flipping
 		   // (2,3) becomes (39,59) on the grid if the max distance is 5 
-
-			next_point.x = (99 - trajectory[trajectory.size()-2][1])/(10.0 * scalingFactor); 
-			next_point.y = (99 - trajectory[trajectory.size()-2][0])/(10.0 * scalingFactor);
+			next_point.x = (99 - trajectory[(int) (trajectory.size()-1)/2][1])/(10.0 * scalingFactor); 
+			next_point.y = (99 - trajectory[(int) (trajectory.size()-1)/2][0])/(10.0 * scalingFactor);
 			next_point.z = yaw;
 		}
 
