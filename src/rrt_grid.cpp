@@ -416,7 +416,7 @@ void goalCallback(const geometry_msgs::Point::ConstPtr& data)
 	goal_point.x = potentialX;
    	goal_point.y = potentialY;
    	yaw = data->z;
-	// cout << "Occugrid equivalent: " << goal_point.x << "," << goal_point.y << "," << yaw << endl;
+ 	//cout << "Occugrid equivalent: " << goal_point.x << "," << goal_point.y << "," << yaw << endl;
     }
 
  //   else { cout << "something's wrong with this point" << endl; }
