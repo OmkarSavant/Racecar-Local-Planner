@@ -14,6 +14,8 @@ vector<float> lidarData(1081,0);
 geometry_msgs::Point goal_point;
 geometry_msgs::Point next_point;
 float yaw = 0.0;
+float maxDist = 5.0; //This is the total range of lidar data we care for. 
+float scalingFactor = 10.0/maxDist; //This is the factor for how much the map should be scaled by 
 
 // Calculates the distance between two nodes
 float RRT::dist(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
@@ -197,6 +199,7 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 				alternateFound = true;
 				break;
 			}
+
 			if((p_end.x + i) < 199 && occu_grid[p_end.y][p_end.x + i] == 0) {
 				p_end.x = p_end.x + i; 
 				alternateFound = true;
@@ -334,13 +337,13 @@ void RRT::buildOccuGrid(vector<float> &lidarScan) {
 	float degree = 0.0;
 	for(int i = 180; i < 901; i++) {
 		float furthestPoint = lidarScan[i];
-		if(furthestPoint > 5.0) { furthestPoint = 5.0; }
+		if(furthestPoint > maxDist) { furthestPoint = maxDist; }
 
 		//Now march from the car to the scanned point by dividing the furthest point by 100
 		if (furthestPoint== 0.0) continue;
 		for(float step = 0.0; step <= furthestPoint; step += furthestPoint/100.0) {
-		    float xValue = 99.0 + step * 10.0 * 10/5 * cosf(M_PI/180.0 * degree);
-		    float yValue = 99.0 - step *10.0 * 10/5 *  sinf(M_PI/180.0 * degree);
+		    float xValue = 99.0 + step * 10.0 * scalingFactor * cosf(M_PI/180.0 * degree);
+		    float yValue = 99.0 - step *10.0 * scalingFactor *  sinf(M_PI/180.0 * degree);
 
 		    //cast the value to int to get the relevant coordinate on the occupancy grid
 		    int xCoord = (int) xValue;
@@ -388,12 +391,12 @@ void goalCallback(const geometry_msgs::Point::ConstPtr& data)
 
    //Convert the goal point from the car frame to the occupancy grid frame
    //In the car frame, the y axis is positive to the left, and the x axis is positive up
-   // (0,0) in car frame is (99,99) in occupancy grid frame
-   // (0,1) in car frame is (99,98) in occupancy grid frame
-   // (5,-6) in car frame is (94,105) in occupancy grid frame
+   // (2,3) in car frame is (69,79) in occupancy grid frame at a scaling factor of 1, where 10 m is represented by 100 tiles
+   // (2,3) becomes 20,30 and then axes flip. If we set our max distance to be 5, these points would be (40,60) before axes flipping
+   // (2,3) becomes (39,59) on the grid if the max distance is 5 
 
-   goal_point.x = 99 - data->x;
-   goal_point.y = 99 - data->y;
+   goal_point.x = 99 - (data->y * scalingFactor);
+   goal_point.y = 99 - (data->x * scalingFactor);
    yaw = data->z;
 }
 
@@ -447,15 +450,14 @@ int main(int argc, char * argv[]) {
 		ROS_INFO("Elapsed time: %f", elapsed.count());
 
 		if (!trajectory.empty()){
-			//Convert the output back into the car's frame
+	 	   //Convert the goal point from the occupancy grid frame to the car frame
+		   //In the car frame, the y axis is positive to the left, and the x axis is positive up
+		   // (2,3) in car frame is (69,79) in occupancy grid frame at a scaling factor of 1, where 10 m is represented by 100 tiles
+		   // (2,3) becomes 20,30 and then axes flip. If we set our max distance to be 5, these points would be (40,60) before flipping
+		   // (2,3) becomes (39,59) on the grid if the max distance is 5 
 
-			//In the car frame, the y axis is positive to the left, and the x axis is positive up
-			// (0,0) in car frame is (99,99) in occupancy grid frame
-	 	        // (0,1) in car frame is (99,98) in occupancy grid frame
-			// (5,-6) in car frame is (94,105) in occupancy grid frame
-
-			next_point.x = 99 - trajectory[trajectory.size()-2][0]; 
-			next_point.y = 99 - trajectory[trajectory.size()-2][1];
+			next_point.x = (99 - trajectory[trajectory.size()-2][1])/(10.0 * scalingFactor); 
+			next_point.y = (99 - trajectory[trajectory.size()-2][0])/(10.0 * scalingFactor);
 			next_point.z = yaw;
 		}
 
