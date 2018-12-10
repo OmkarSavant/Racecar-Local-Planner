@@ -162,12 +162,12 @@ RRT::RRT() : MAX_DIST(5) {
 
 }
 
-void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj){
+void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vector<int>> &traj){
 
 
 	//Create starting nodeStruct and add
 	struct treeNode starting;
-	starting.node = p_start;
+	starting.node = p1;
 	starting.parent_idx = -1;
 
 	structVect.push_back(starting);
@@ -177,9 +177,9 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 	//As a first pass, see if we can connect directly to the end node with no obstacles in the way. 
 	// If so, create a path directly to it and return that, skipping the tree altogether. 
 	
-	if(collision_free(p_start,p_end)) {
+	if(collision_free(p1,p2)) {
 		struct treeNode endStruct;
-		endStruct.node = p_end;
+		endStruct.node = p2;
 		endStruct.parent_idx = 0; //the parent is the starting node
 		
 		structVect.push_back(endStruct);
@@ -187,34 +187,43 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 		pathFound = true;
 		cout << "Path found." << endl;
 	}
-
+	geometry_msgs::Point p_start, p_end;
 	//If there wasn't a direct path, check whether the final point is within free space first, if not. Move it laterally
-	if(!pathFound && occu_grid[p_end.y][p_end.x] == 1) { 
+	if(!pathFound && occu_grid[p2.y][p2.x] == 1) { 
 		bool alternateFound = false;
 		
 		//search left and right, and return the point in freespace which is closest
 		for(int i = 1; i < 199 ; i++) {
-			if((p_end.x - i) > 0 && occu_grid[p_end.y][p_end.x - i] == 0) {
-				p_end.x = p_end.x - i; 
+			if((p2.x - i) > 0 && occu_grid[p2.y][p2.x - i] == 0) {
+				p_end.x = p2.x - i; 
+				p_end.y = p2.y;
 				alternateFound = true;
 				break;
 			}
 
-			if((p_end.x + i) < 199 && occu_grid[p_end.y][p_end.x + i] == 0) {
-				p_end.x = p_end.x + i; 
+			if((p2.x + i) < 199 && occu_grid[p2.y][p2.x + i] == 0) {
+				p_end.x = p2.x + i; 
+				p_end.y = p2.y;
 				alternateFound = true;
 				break;
 			}
 		}
-
+		
 		if(!alternateFound) {
 			for(int i = 1; i < 99 ; i++) {
-				if((p_end.y + i) < 99 && occu_grid[p_end.y + i][p_end.x] == 0) {
-					p_end.y = p_end.y + i; 
+				if((p2.y + i) < 99 && occu_grid[p2.y + i][p2.x] == 0) {
+					p_end.x = p2.x;
+					p_end.y = p2.y + i; 
 					break;
 				}
 			}
 		}
+	}
+	else{
+		p_start.x = p1.x;
+		p_start.y = p1.y;
+		p_end.x = p2.x;
+		p_end.y = p2.y;
 	}
 	
 	const int N = 10000; //max number of iterations in the search 
