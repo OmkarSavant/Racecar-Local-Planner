@@ -187,7 +187,9 @@ void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vec
 		pathFound = true;
 		cout << "Path found." << endl;
 	}
+
 	geometry_msgs::Point p_start, p_end;
+
 	//If there wasn't a direct path, check whether the final point is within free space first, if not. Move it laterally
 	if(!pathFound && occu_grid[p2.y][p2.x] == 1) { 
 		bool alternateFound = false;
@@ -219,6 +221,7 @@ void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vec
 			}
 		}
 	}
+	//If there's no problem with the endpoint or if the path was found
 	else{
 		p_start.x = p1.x;
 		p_start.y = p1.y;
@@ -384,7 +387,6 @@ void RRT::buildOccuGrid(vector<float> &lidarScan) {
 
 void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
-   cout << "Scan Callback invoked " << endl;
    for(int i=0;i<1081;i++) {   
 		if(isinf(scan->ranges[i])) { lidarData[i] = 10.0; }
 		else { 
@@ -424,13 +426,13 @@ int main(int argc, char * argv[]) {
 
   	ros::Rate r(10);
 
+	RRT rrt;
+
 	geometry_msgs::Point P1,P2;
+
+	//P1 is always the car's origin position in the occupancy grid frame
 	P1.x = 99;
 	P1.y = 99;
-	P2.x = 130;
-	P2.y = 30;
-
-	RRT rrt;
 
 	while (ros::ok()){	
 
@@ -442,15 +444,9 @@ int main(int argc, char * argv[]) {
 
 		//Create a vector of int arrays that represent the x,y coordinates of the local path 
 		vector<vector<int>> trajectory; 
-
-		//to do: 
-		//Take the next waypoint copying the pure pursuit code
-		//convert to the car's frame -> sid has this code
-		//the car's current position should always be 99,99 in the lidar space
-		//P1 = 99,99 P2 = the waypoint converted to the car's frame
-		//This generates a trajectory. 
-		//We have to return 1 point from this trajectory as the new waypoint --> this should be converted back into the world frame
-		//pose that we return for this point should always be the final pose that the original waypoint had. 
+		
+		P2.x = goal_point.x;
+		P2.y = goal_point.y;
 
 		rrt.plan_it(P1,P2,trajectory);
 
