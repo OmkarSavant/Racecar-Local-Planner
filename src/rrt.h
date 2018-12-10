@@ -42,7 +42,7 @@ public:
 	
 	RRT();
 
-	void buildOccuGrid(float lidarScan[1081]);
+	void buildOccuGrid(vector<float> &lidarScan);
 	void plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj);
 	void publish_it();
 	void markObstacle();
