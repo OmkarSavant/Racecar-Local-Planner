@@ -395,8 +395,8 @@ int main(int argc, char * argv[]) {
 	//subsriber for the laser ranges
 	ros::NodeHandle n;
 	ros::Subscriber subs = n.subscribe("/scan", 10, scanCallback);
-	// ros::Subscriber subs_goal = n.subscribe("/waypoint/goal", 10, goalCallback);
-	// ros::Publisher pub_next = n.advertise<geometry_msgs::Point>("/waypoint/next", 100);
+	ros::Subscriber subs_goal = n.subscribe("/waypoint/goal", 10, goalCallback);
+	ros::Publisher pub_next = n.advertise<geometry_msgs::Point>("/waypoint/next", 100);
 
   	ros::Rate r(10);
 
@@ -438,11 +438,13 @@ int main(int argc, char * argv[]) {
 		std::chrono::duration<double> elapsed = finish - start;
 		ROS_INFO("Elapsed time: %f", elapsed.count());
 
-		// next_point.x = trajectory[0][0]; //store the next point and publish it to python file
-		// next_point.y = trajectory[0][1];
-		// next_point.z = yaw;
+		if (!trajectory.empty()){
+			next_point.x = trajectory[trajectory.size()-2][0]-99; //store the next point and publish it to python file
+			next_point.y = trajectory[trajectory.size()-2][1]-99;
+			next_point.z = yaw;
+		}
+		pub_next.publish(next_point);
 
-		// pub_next.publish(next_point);
 		rrt.publish_it();
 		ros::spinOnce(); //Ensures all the callbacks are called, this will update the lidar data with the most recent scan
 		// r.sleep();
