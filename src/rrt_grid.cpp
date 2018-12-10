@@ -158,28 +158,36 @@ RRT::RRT() : MAX_DIST(5) {
 
 	cout<<"The RRT object's been created"<<endl;		
 
-
 }
 
 void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj){
 	
 	//Check whether the final point is within free space first, if not. Move it laterally
 	if(occu_grid[p_end.y][p_end.x] == 1) { 
-		cout << "OCCUPIED! " << endl; 
+		bool alternateFound = false;
 		
 		//search left and right, and return the point in freespace which is closest
-		for(int i = 0; i < 200 ; i++) {
+		for(int i = 1; i < 199 ; i++) {
 			if((p_end.x - i) > 0 && occu_grid[p_end.y][p_end.x - i] == 0) {
 				p_end.x = p_end.x - i; 
+				alternateFound = true;
 				break;
 			}
-			if((p_end.x + i) < 200 && occu_grid[p_end.y][p_end.x + i] == 0) {
+			if((p_end.x + i) < 199 && occu_grid[p_end.y][p_end.x + i] == 0) {
 				p_end.x = p_end.x + i; 
+				alternateFound = true;
 				break;
 			}
 		}
-		
-		cout << "New X: " << p_end.x << endl;
+
+		if(!alternateFound) {
+			for(int i = 1; i < 99 ; i++) {
+				if((p_end.y + i) < 99 && occu_grid[p_end.y + i][p_end.x] == 0) {
+					p_end.y = p_end.y + i; 
+					break;
+				}
+			}
+		}
 	}
 
 	//Create starting nodeStruct and add
