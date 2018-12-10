@@ -161,9 +161,33 @@ RRT::RRT() : MAX_DIST(5) {
 }
 
 void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, vector<vector<int>> &traj){
+
+
+	//Create starting nodeStruct and add
+	struct treeNode starting;
+	starting.node = p_start;
+	starting.parent_idx = -1;
+
+	structVect.push_back(starting);
+
+	bool pathFound = false;
+
+	//As a first pass, see if we can connect directly to the end node with no obstacles in the way. 
+	// If so, create a path directly to it and return that, skipping the tree altogether. 
 	
-	//Check whether the final point is within free space first, if not. Move it laterally
-	if(occu_grid[p_end.y][p_end.x] == 1) { 
+	if(collision_free(p_start,p_end)) {
+		struct treeNode endStruct;
+		endStruct.node = p_end;
+		endStruct.parent_idx = 0; //the parent is the starting node
+		
+		structVect.push_back(endStruct);
+
+		pathFound = true;
+		cout << "Path found." << endl;
+	}
+
+	//If there wasn't a direct path, check whether the final point is within free space first, if not. Move it laterally
+	if(!pathFound && occu_grid[p_end.y][p_end.x] == 1) { 
 		bool alternateFound = false;
 		
 		//search left and right, and return the point in freespace which is closest
@@ -189,17 +213,8 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 			}
 		}
 	}
-
-	//Create starting nodeStruct and add
-	struct treeNode starting;
-	starting.node = p_start;
-	starting.parent_idx = -1;
-
-	structVect.push_back(starting);
 	
 	const int N = 10000; //max number of iterations in the search 
-	
-	bool pathFound = 0;
 
 	for (int i=0; i<N; i++){
 		
@@ -252,7 +267,6 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 	} // end for loop
 	
 	if(pathFound) {
-		cout << "Path Found"<<endl;
 		treeNode currNode = structVect[structVect.size() - 1]; //endNode
 		line_list_final.points.push_back(currNode.node);
 		
@@ -273,11 +287,9 @@ void RRT::plan_it(geometry_msgs::Point &p_start, geometry_msgs::Point &p_end, ve
 		newCoords.push_back(currNode.node.x);
 		newCoords.push_back(currNode.node.y);
 		traj.push_back(newCoords);
-
 	}
 
 }// end plan_it
-
 
 void RRT::markObstacle(){
 	for (int i=0;i<occu_grid.size();i++){
@@ -295,9 +307,7 @@ void RRT::markObstacle(){
 
 void RRT::publish_it() {
 	pub_marker.publish(points);
-	// pub_marker.publish(line_list);
 	pub_marker.publish(line_list_final);
-
 }
 
 void RRT::vec_delete(){
