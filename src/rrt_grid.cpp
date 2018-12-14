@@ -23,14 +23,14 @@ float RRT::dist(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
 		return sqrt(pow((p2.x-p1.x),2)+pow((p2.y-p1.y),2));
 	}
 
-// Steer random node towards the closet node
+// Steer random node towards the closet node based on the max allowable distance
 geometry_msgs::Point RRT::steer(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
-	if (dist(p1,p2) <= MAX_DIST) return p2;
+	if (dist(p1,p2) <= maxDist) return p2;
 	else {
 		float the = atan2((p2.y - p1.y),(p2.x - p1.x));
 		geometry_msgs::Point temp_p;
-		temp_p.x = p1.x + MAX_DIST * cos(the);
-		temp_p.y = p1.y + MAX_DIST * sin(the);
+		temp_p.x = p1.x + maxDist * cos(the);
+		temp_p.y = p1.y + maxDist * sin(the);
 		return temp_p;
 	}
 }
@@ -85,7 +85,6 @@ bool RRT::collision_free(geometry_msgs::Point& p1, geometry_msgs::Point& p2){
 		int count = 0;
 		for (double i=x_small; i<x_large;i+=step){
 			if (count>30) return false;
-			// ROS_INFO("4 smallx:%f largex:%f y:%f x:%f", x_small, x_large, slope*i+c , i);
 			int y_cal = slope*i+c;
 			int x_cal = i;
 			if (occu_grid[y_cal][x_cal]==1) return false;
@@ -105,7 +104,6 @@ bool RRT::_InFreeSpace(geometry_msgs::Point& p){
 geometry_msgs::Point RRT::random_point(){
 	geometry_msgs::Point temp_p;
 	temp_p.x = (int)rand() % 200 ; //x max
-	// srand(time(NULL));
 	temp_p.y = (int)rand() % 100 ; // y max
 	temp_p.z = 0;
 	return temp_p;
@@ -119,7 +117,6 @@ int RRT::findNearestStruct(geometry_msgs::Point &p){
 	int nearest_idx = 0;
 	
 	for (int i=0; i<structVect.size();i++){
-		//cout<<"this is vect loop"<<structVect[i].node.x<<endl;
 		if (dist(p,structVect[i].node) < dist(p,n)) {
 			n = structVect[i].node;	
 			nearest_idx = i;
@@ -158,13 +155,9 @@ RRT::RRT() : MAX_DIST(5) {
 	line_list_final.color.b = 1.0;
 	line_list_final.color.a = 1.0;	
 
-	//cout<<"The RRT object's been created"<<endl;		
-
 }
 
 void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vector<int>> &traj){
-
-	//cout << "end goal: " << p2.x << "," << p2.y << "," << yaw << endl;
 
 	//Create starting nodeStruct and add
 	struct treeNode starting;
@@ -186,7 +179,7 @@ void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vec
 		structVect.push_back(endStruct);
 
 		pathFound = true;
-		cout << "Path found." << endl;
+		//cout << "Path found." << endl;
 	}
 
 	geometry_msgs::Point p_start, p_end;
@@ -260,8 +253,8 @@ void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vec
 
 				structVect.push_back(newStruct);
 		
-				//Check if the new point is within an acceptable delta of the endpoint
-				if (dist(rd,p_end) < 5) {
+				//Check if the new point is within the max dist of the endpoint
+				if (dist(rd,p_end) < maxDist) {
 
 					//now check if there is a collision free path to the endpoint from this random point
 					if (collision_free(rd,p_end)) {
@@ -335,7 +328,7 @@ void RRT::vec_delete(){
 
 void RRT::buildOccuGrid(vector<float> &lidarScan) {
 
-	//range is 10 meters, so this gives each grid a resolution of 0.1 meters x 0.1 meters
+	//default range is 10 meters, so this gives each grid a resolution of 0.1 meters x 0.1 meters with no scaling
 
 	//An occupancy grid object that shows the space around the car. This is not the member variable
 	vector<vector<int>> occugrid {100, vector<int>(200,1)};
@@ -369,6 +362,7 @@ void RRT::buildOccuGrid(vector<float> &lidarScan) {
 
 		degree += 0.25;
 	}
+
 	vector<vector<int>> inflated_grid {100, vector<int>(200,0)};
 
 	//Inflate the grid by making all of the 1s' neighbors 1s as well
@@ -383,6 +377,7 @@ void RRT::buildOccuGrid(vector<float> &lidarScan) {
 		    }
 		}
 	}
+	//set the RRT's member variable to be the inflated grid
 	occu_grid = inflated_grid;
 }
 
@@ -394,13 +389,10 @@ void scanCallback(const sensor_msgs::LaserScan::ConstPtr& scan)
 			lidarData[i] = scan->ranges[i];
 	 	}
     }
-
 }
 
 void goalCallback(const geometry_msgs::Point::ConstPtr& data)
 {
-   //cout << "Goal point Callback invoked " << endl;
-
    //Convert the goal point from the car frame to the occupancy grid frame
    //In the car frame, the y axis is positive to the left, and the x axis is positive up
    // (2,3) in car frame is (69,79) in occupancy grid frame at a scaling factor of 1, where 10 m is represented by 100 tiles
@@ -410,18 +402,12 @@ void goalCallback(const geometry_msgs::Point::ConstPtr& data)
    float potentialX = 99 - (data->y * scalingFactor);
    float potentialY = 99 - (data->x * scalingFactor);
 
-  // cout << "Published goal: " << data->x << "," << data->y << "," << data->z << endl;
    //check to make sure the new point would not cause a seg fault
    if(potentialX >= 0 && potentialX <= 199 && potentialY >= 0 && potentialY <= 99) {
 	goal_point.x = potentialX;
    	goal_point.y = potentialY;
    	yaw = data->z;
- 	//cout << "Occugrid equivalent: " << goal_point.x << "," << goal_point.y << "," << yaw << endl;
-    }
-
- //   else { cout << "something's wrong with this point" << endl; }
-
-  
+    }  
 }
 
 int main(int argc, char * argv[]) {
@@ -448,11 +434,13 @@ int main(int argc, char * argv[]) {
 	P1.y = 99;
 
 	while (ros::ok()){	
-
-		auto start = std::chrono::high_resolution_clock::now();
+	
+		//used for profiling the RRT code
+		//auto start = std::chrono::high_resolution_clock::now();
 
 		//build the occupancy grid based on the latest lidar data
 		rrt.buildOccuGrid(lidarData);
+
 		rrt.markObstacle();
 
 		//Create a vector of int arrays that represent the x,y coordinates of the local path 
@@ -463,9 +451,9 @@ int main(int argc, char * argv[]) {
 
 		rrt.plan_it(P1,P2,trajectory);
 
-		auto finish = std::chrono::high_resolution_clock::now();
-		std::chrono::duration<double> elapsed = finish - start;
-		//ROS_INFO("Elapsed time: %f", elapsed.count());
+		//auto finish = std::chrono::high_resolution_clock::now();
+		//std::chrono::duration<double> total_elapsed = finish - start;
+		//ROS_INFO("Elapsed time: %f", total_elapsed.count());
 
 		if (!trajectory.empty()){
 	 	   //Convert the goal point from the occupancy grid frame to the car frame
