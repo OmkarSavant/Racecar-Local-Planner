@@ -18,7 +18,13 @@
   	<node pkg="Racecar-Local-Planner" name="visualize_markers_node" type="visualize_markers.py" output="screen"/>
   	
 	<!-- Nodes for RRT --> 
-	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find Racecar-Local-Planner)/rviz_cfg/RRT.rviz" output="screen"/>
+
+	<!-- Configuration to see the RRT demo in Rviz --> 
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find Racecar-Local-Planner)/rviz_cfg/RRT.rviz" output="screen"/> 
+
+	<!-- Configuration to see the overall path on Rviz -->
+	<!-- <node pkg="rviz" type="rviz" name="rviz" args="-d $(find Racecar-Local-Planner)/rviz_cfg/pure_pursuit_sim.rviz" output="screen"/> -->
+
 	<node pkg="Racecar-Local-Planner" name="RRT_grid_planner" type="RRT_grid_planner" output="screen" />
 
 </launch>

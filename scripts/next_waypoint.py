@@ -8,7 +8,7 @@ import numpy as np
 from numpy import linalg as la
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import csv
-import os 
+import os
 
 #This code is used to determine the car's next waypoint goal based on its localization. It does not consider any obstacles, that is handled by the local planner that subscribes to the topic that this node publishes the goal to. 
 
