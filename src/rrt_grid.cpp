@@ -179,7 +179,6 @@ void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vec
 		structVect.push_back(endStruct);
 
 		pathFound = true;
-		//cout << "Path found." << endl;
 	}
 
 	geometry_msgs::Point p_start, p_end;
@@ -267,7 +266,7 @@ void RRT::plan_it(geometry_msgs::Point &p1, geometry_msgs::Point &p2, vector<vec
 						structVect.push_back(endStruct);
 
 						pathFound = true;
-						cout << "Path found." << endl;
+						//cout << "Path found." << endl;
 					}					
 				}
 			}
@@ -399,13 +398,15 @@ void goalCallback(const geometry_msgs::Point::ConstPtr& data)
    // (2,3) becomes 20,30 and then axes flip. If we set our max distance to be 5, these points would be (40,60) before axes flipping
    // (2,3) becomes (39,59) on the grid if the max distance is 5 
 
-   float potentialX = 99 - (data->y * scalingFactor);
-   float potentialY = 99 - (data->x * scalingFactor);
+   float potentialX = 99 - (data->y * 10 * scalingFactor);
+   float potentialY = 99 - (data->x * 10 * scalingFactor);
 
    //check to make sure the new point would not cause a seg fault
    if(potentialX >= 0 && potentialX <= 199 && potentialY >= 0 && potentialY <= 99) {
 	goal_point.x = potentialX;
    	goal_point.y = potentialY;
+	cout << "data in: " << data->x << "," << data->y << endl;
+	cout << "occu goal" << goal_point.x << "," << goal_point.y << endl;
    	yaw = data->z;
     }  
 }

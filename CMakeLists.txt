@@ -197,8 +197,6 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
-add_executable(RRT_planner src/rrt.cpp)
-target_link_libraries(RRT_planner ${catkin_LIBRARIES})
 
 add_executable(RRT_grid_planner src/rrt_grid.cpp)
 target_link_libraries(RRT_grid_planner ${catkin_LIBRARIES})
